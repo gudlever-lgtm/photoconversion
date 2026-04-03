@@ -67,6 +67,19 @@ cfg_set('access_token',  $resp['access_token']);
 cfg_set('refresh_token', $resp['refresh_token'] ?? '');
 cfg_set('token_type',    $resp['token_type'] ?? 'Bearer');
 
+// Verify the photoslibrary.readonly scope was actually granted.
+// Google shows sensitive scopes separately on the consent screen and users
+// sometimes skip them — catch it here rather than failing mid-migration.
+$granted = $resp['scope'] ?? '';
+if (strpos($granted, 'photoslibrary') === false) {
+    render_error(
+        'Google did not grant access to your Photos library. ' .
+        'Please <a href="index.php">start over</a> and on the Google consent screen ' .
+        'make sure to allow <strong>"View your Google Photos library"</strong>. ' .
+        'If you see an "app isn\'t verified" warning, click <em>Advanced → Go to app (unsafe)</em> and then allow all requested permissions.'
+    );
+}
+
 // Clear the one-time state
 cfg_set('oauth_state', null);
 
