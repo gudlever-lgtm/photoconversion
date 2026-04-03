@@ -76,15 +76,30 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $cfg_file = tmp_dir() . '/run_' . bin2hex(random_bytes(8)) . '.json';
     file_put_contents($cfg_file, json_encode($_SESSION['cfg'] ?? []));
 
-    // Spawn background PHP CLI process — completely decoupled from this FPM request
-    $php  = PHP_BINARY;
-    $self = escapeshellarg(__FILE__);
-    $arg  = escapeshellarg($cfg_file);
-    exec("{$php} {$self} --background {$arg} > /dev/null 2>&1 &");
+    // Spawn background PHP CLI process — try multiple methods in order
+    $php   = PHP_BINARY;
+    $self  = escapeshellarg(__FILE__);
+    $arg   = escapeshellarg($cfg_file);
+    $cmd   = "{$php} {$self} --background {$arg}";
+    $spawn = 'none';
 
-    http_response_code(202);
+    if (function_exists('proc_open')) {
+        $desc = [['file','/dev/null','r'],['file','/dev/null','w'],['file','/dev/null','w']];
+        $p = proc_open("{$cmd} &", $desc, $pipes);
+        if ($p !== false) { proc_close($p); $spawn = 'proc_open'; }
+    }
+    if ($spawn === 'none' && function_exists('popen')) {
+        $p = popen("{$cmd} > /dev/null 2>&1 &", 'r');
+        if ($p !== false) { pclose($p); $spawn = 'popen'; }
+    }
+    if ($spawn === 'none' && function_exists('exec')) {
+        exec("{$cmd} > /dev/null 2>&1 &");
+        $spawn = 'exec';
+    }
+
+    http_response_code($spawn !== 'none' ? 202 : 500);
     header('Content-Type: application/json');
-    echo json_encode(['started' => true]);
+    echo json_encode(['started' => $spawn !== 'none', 'spawn' => $spawn]);
     exit;
 }
 
