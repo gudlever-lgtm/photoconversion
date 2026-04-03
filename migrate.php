@@ -2,15 +2,44 @@
 /**
  * migrate.php — Migration UI + Engine
  *
- * GET  /migrate.php            → show UI
- * POST /migrate.php?action=run → run migration (AJAX)
- * GET  /migrate.php?action=status → return progress JSON (AJAX)
- * GET  /migrate.php?action=log    → return full log as plain text download
+ * GET  /migrate.php                  → show UI
+ * POST /migrate.php?action=run       → start migration (AJAX, spawns background worker)
+ * GET  /migrate.php?action=status    → return progress JSON (AJAX)
+ * GET  /migrate.php?action=log       → download log as plain text
+ *
+ * CLI  php migrate.php --background <config.json>  → background worker (spawned internally)
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/config.php';
+
+// ── Background CLI worker ──────────────────────────────────────────────────────
+// Spawned by action=run so the migration runs outside the PHP-FPM request,
+// avoiding session locks and FPM request timeouts entirely.
+if (PHP_SAPI === 'cli') {
+    $cfg_file = $argv[2] ?? '';
+    if (($argv[1] ?? '') !== '--background' || !$cfg_file || !file_exists($cfg_file)) {
+        exit(1);
+    }
+    $data = json_decode(file_get_contents($cfg_file), true);
+    @unlink($cfg_file); // consume immediately
+
+    // Populate session superglobal so cfg_get()/cfg_set() work without a real session
+    $_SESSION['cfg'] = $data ?? [];
+
+    $progress = [
+        'total'   => 0,
+        'done'    => 0,
+        'skipped' => 0,
+        'errors'  => 0,
+        'log'     => [],
+        'status'  => 'running',
+    ];
+    progress_write($progress);
+    run_migration($progress);
+    exit(0);
+}
 
 $action = $_GET['action'] ?? '';
 
@@ -43,39 +72,19 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     cfg_require('access_token', 'client_id', 'client_secret', 'subdomain', 'api_key');
 
-    $progress = [
-        'total'   => 0,
-        'done'    => 0,
-        'skipped' => 0,
-        'errors'  => 0,
-        'log'     => [],
-        'status'  => 'running',
-    ];
-    progress_write($progress);
+    // Write config to a temp file so the CLI worker can read it without a session
+    $cfg_file = tmp_dir() . '/run_' . bin2hex(random_bytes(8)) . '.json';
+    file_put_contents($cfg_file, json_encode($_SESSION['cfg'] ?? []));
 
-    // Return HTTP 202 immediately so the browser can start polling,
-    // then continue running the migration in the same PHP-FPM worker.
+    // Spawn background PHP CLI process — completely decoupled from this FPM request
+    $php  = PHP_BINARY;
+    $self = escapeshellarg(__FILE__);
+    $arg  = escapeshellarg($cfg_file);
+    exec("{$php} {$self} --background {$arg} > /dev/null 2>&1 &");
+
     http_response_code(202);
     header('Content-Type: application/json');
-    header('Content-Length: 14');
-    echo '{"started":true}';
-
-    // Release the session file lock BEFORE finishing the request.
-    // Without this, every ?action=status poll blocks on session_start()
-    // waiting for this request to release the lock — killing live updates.
-    session_write_close();
-
-    if (function_exists('fastcgi_finish_request')) {
-        fastcgi_finish_request(); // Flush response to client; worker keeps running
-    } else {
-        // Fallback: flush output buffers (may not work in all SAPI configs)
-        if (ob_get_level()) {
-            ob_end_flush();
-        }
-        flush();
-    }
-
-    run_migration($progress);
+    echo json_encode(['started' => true]);
     exit;
 }
 
