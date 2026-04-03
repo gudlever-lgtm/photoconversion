@@ -60,6 +60,11 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Length: 14');
     echo '{"started":true}';
 
+    // Release the session file lock BEFORE finishing the request.
+    // Without this, every ?action=status poll blocks on session_start()
+    // waiting for this request to release the lock — killing live updates.
+    session_write_close();
+
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request(); // Flush response to client; worker keeps running
     } else {
