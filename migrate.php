@@ -43,6 +43,18 @@ if (PHP_SAPI === 'cli') {
 
 $action = $_GET['action'] ?? '';
 
+// ── AJAX: tokeninfo diagnostic ────────────────────────────────────────────────
+if ($action === 'tokeninfo') {
+    $token = cfg_get('access_token', '');
+    if (!$token) { echo json_encode(['error' => 'no token in session']); exit; }
+    $ch = curl_init('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' . urlencode($token));
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+    $body = curl_exec($ch); curl_close($ch);
+    header('Content-Type: application/json');
+    echo $body;
+    exit;
+}
+
 // ── AJAX: status ──────────────────────────────────────────────────────────────
 if ($action === 'status') {
     header('Content-Type: application/json');
