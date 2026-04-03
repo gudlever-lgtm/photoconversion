@@ -53,9 +53,23 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
     progress_write($progress);
 
-    // Run in background so AJAX returns immediately
-    // We fork by calling ourselves via CLI if possible, else run inline
-    // (lighttpd + PHP-FPM: inline is fine for moderate libraries)
+    // Return HTTP 202 immediately so the browser can start polling,
+    // then continue running the migration in the same PHP-FPM worker.
+    http_response_code(202);
+    header('Content-Type: application/json');
+    header('Content-Length: 14');
+    echo '{"started":true}';
+
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request(); // Flush response to client; worker keeps running
+    } else {
+        // Fallback: flush output buffers (may not work in all SAPI configs)
+        if (ob_get_level()) {
+            ob_end_flush();
+        }
+        flush();
+    }
+
     run_migration($progress);
     exit;
 }
