@@ -55,6 +55,24 @@ if ($action === 'tokeninfo') {
     exit;
 }
 
+// ── AJAX: test Google Photos API call directly ────────────────────────────────
+if ($action === 'testapi') {
+    $token = cfg_get('access_token', '');
+    if (!$token) { echo json_encode(['error' => 'no token in session']); exit; }
+    $ch = curl_init('https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=1');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => ["Authorization: Bearer {$token}"],
+        CURLOPT_TIMEOUT        => 15,
+    ]);
+    $body = curl_exec($ch);
+    $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    header('Content-Type: application/json');
+    echo json_encode(['http' => $http, 'response' => json_decode($body, true) ?? $body]);
+    exit;
+}
+
 // ── AJAX: status ──────────────────────────────────────────────────────────────
 if ($action === 'status') {
     header('Content-Type: application/json');
