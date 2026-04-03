@@ -77,7 +77,12 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     file_put_contents($cfg_file, json_encode($_SESSION['cfg'] ?? []));
 
     // Spawn background PHP CLI process — try multiple methods in order
-    $php   = PHP_BINARY;
+    // PHP_BINARY under FPM is the FPM daemon binary, not the CLI binary.
+    // Find the matching CLI binary by version instead.
+    $ver = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+    $php = is_executable("/usr/bin/php{$ver}") ? "/usr/bin/php{$ver}"
+         : (is_executable('/usr/bin/php')      ? '/usr/bin/php'
+         : PHP_BINARY);
     $self  = escapeshellarg(__FILE__);
     $arg   = escapeshellarg($cfg_file);
     $cmd   = "{$php} {$self} --background {$arg}";
