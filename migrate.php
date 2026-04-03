@@ -528,7 +528,8 @@ function run_migration(array &$progress): void
         }
 
         if ($http !== 200 || !is_array($items_resp)) {
-            progress_log($progress, "ERROR: Google Photos API returned HTTP {$http} on page fetch.");
+            $detail = $items_resp['error']['message'] ?? $items_resp['error']['status'] ?? json_encode($items_resp);
+            progress_log($progress, "ERROR: Google Photos API returned HTTP {$http}: {$detail}");
             $progress['status'] = 'error';
             progress_write($progress);
             return;
