@@ -68,6 +68,27 @@ $prefill = [
 <title>Photos Migration — Setup</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.6rem;
+  }
+  .logo-area svg { flex-shrink: 0; }
+  .logo-text { display: flex; flex-direction: column; gap: 0.15rem; }
+  .logo-name {
+    color: #4ecca3;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .logo-tagline {
+    color: #5a7a72;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
   body {
     background: #1a1a2e;
     color: #e0e0e0;
@@ -85,11 +106,6 @@ $prefill = [
     padding: 2.5rem 2rem;
     width: 100%;
     max-width: 520px;
-  }
-  h1 {
-    color: #4ecca3;
-    font-size: 1.5rem;
-    margin-bottom: 0.4rem;
   }
   .subtitle {
     color: #888;
@@ -172,7 +188,32 @@ $prefill = [
 </head>
 <body>
 <div class="card">
-  <h1>Google Photos → PixelUnion</h1>
+  <div class="logo-area">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
+      <!-- Conversion arc — top (left→right) -->
+      <path d="M13 9 Q32 2 51 9" fill="none" stroke="#4ecca3" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+      <polyline points="47,5 51,9 47,13" stroke="#4ecca3" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+      <!-- Conversion arc — bottom (right→left) -->
+      <path d="M51 55 Q32 62 13 55" fill="none" stroke="#4ecca3" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+      <polyline points="17,51 13,55 17,59" stroke="#4ecca3" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+      <!-- Camera body -->
+      <rect x="9" y="19" width="46" height="30" rx="4.5" fill="rgba(78,204,163,0.07)" stroke="#4ecca3" stroke-width="2.2"/>
+      <!-- Top notch/viewfinder -->
+      <path d="M21 19 L22 13 Q23 11 25 11 L39 11 Q41 11 42 13 L43 19" fill="rgba(78,204,163,0.07)" stroke="#4ecca3" stroke-width="2.2" stroke-linejoin="round"/>
+      <!-- Lens outer ring -->
+      <circle cx="32" cy="34" r="11" fill="rgba(78,204,163,0.07)" stroke="#4ecca3" stroke-width="2.2"/>
+      <!-- Lens inner ring -->
+      <circle cx="32" cy="34" r="6.5" fill="none" stroke="#4ecca3" stroke-width="1.5" opacity="0.4"/>
+      <!-- Lens centre -->
+      <circle cx="32" cy="34" r="3" fill="#4ecca3"/>
+      <!-- Indicator light -->
+      <circle cx="15" cy="25" r="2.8" fill="#4ecca3" opacity="0.55"/>
+    </svg>
+    <div class="logo-text">
+      <span class="logo-name">PhotoConversion</span>
+      <span class="logo-tagline">Google Photos → PixelUnion</span>
+    </div>
+  </div>
   <p class="subtitle">Migration Bridge &mdash; enter your credentials to begin</p>
 
   <form method="POST" action="">
