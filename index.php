@@ -30,7 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         cfg_set('api_key',       $api_key);
 
         // Build redirect_uri pointing to callback.php in the same directory
-        $scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                 || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+                    ? 'https' : 'http';
         $host     = $_SERVER['HTTP_HOST'];
         $base     = dirname($_SERVER['SCRIPT_NAME']);
         $base     = rtrim($base, '/');
@@ -59,6 +61,14 @@ $prefill = [
     'client_id'  => htmlspecialchars(cfg_get('client_id', '')),
     'subdomain'  => htmlspecialchars(cfg_get('subdomain', '')),
 ];
+
+// Compute the exact callback URL this server will send to Google
+$_scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+          || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+             ? 'https' : 'http';
+$_host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$_base     = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$_callback_url = htmlspecialchars($_scheme . '://' . $_host . $_base . '/callback.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -210,7 +220,7 @@ $prefill = [
 
   <div class="info-box">
     <strong>Callback URL</strong> to register in Google Cloud Console:<br>
-    <code>http(s)://&lt;your-server&gt;/migration/callback.php</code>
+    <code><?= $_callback_url ?></code>
   </div>
 </div>
 </body>
