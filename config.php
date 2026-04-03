@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+date_default_timezone_set('Europe/Copenhagen');
+
 if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
     session_start();
 }
