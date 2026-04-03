@@ -1,0 +1,20 @@
+# ── lighttpd configuration snippet ────────────────────────────────────────────
+# Add these lines to your lighttpd.conf (or to a conf.d include file).
+# Adjust the filesystem path if your installation differs from /var/www/migration.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# 1. Alias so the app is reachable at https://yourserver/migration/
+alias.url += ( "/migration" => "/var/www/migration" )
+
+# 2. Deny direct browser access to the tmp/ directory
+#    (progress.json and downloaded photos must not be publicly readable)
+$HTTP["url"] =~ "^/migration/tmp/" {
+    url.access-deny = ( "" )
+}
+
+# 3. Optional: enable PHP via FastCGI if not already global
+#    (skip if PHP-FPM is already configured system-wide)
+# fastcgi.server += ( ".php" =>
+#   (( "socket" => "/run/php/php8.2-fpm.sock",
+#      "check-local" => "disable" ))
+# )
