@@ -83,22 +83,23 @@ if ($action === 'run' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $php = is_executable("/usr/bin/php{$ver}") ? "/usr/bin/php{$ver}"
          : (is_executable('/usr/bin/php')      ? '/usr/bin/php'
          : PHP_BINARY);
-    $self  = escapeshellarg(__FILE__);
-    $arg   = escapeshellarg($cfg_file);
-    $cmd   = "{$php} {$self} --background {$arg}";
-    $spawn = 'none';
+    $self   = escapeshellarg(__FILE__);
+    $arg    = escapeshellarg($cfg_file);
+    $errlog = escapeshellarg(tmp_dir() . '/worker.log');
+    $cmd    = "{$php} {$self} --background {$arg}";
+    $spawn  = 'none';
 
     if (function_exists('proc_open')) {
-        $desc = [['file','/dev/null','r'],['file','/dev/null','w'],['file','/dev/null','w']];
+        $desc = [['file','/dev/null','r'],['file','/dev/null','w'],['file', tmp_dir() . '/worker.log','w']];
         $p = proc_open("{$cmd} &", $desc, $pipes);
         if ($p !== false) { proc_close($p); $spawn = 'proc_open'; }
     }
     if ($spawn === 'none' && function_exists('popen')) {
-        $p = popen("{$cmd} > /dev/null 2>&1 &", 'r');
+        $p = popen("{$cmd} > /dev/null 2>{$errlog} &", 'r');
         if ($p !== false) { pclose($p); $spawn = 'popen'; }
     }
     if ($spawn === 'none' && function_exists('exec')) {
-        exec("{$cmd} > /dev/null 2>&1 &");
+        exec("{$cmd} > /dev/null 2>{$errlog} &");
         $spawn = 'exec';
     }
 
